@@ -45,21 +45,34 @@ class fish():
         # return
         return
 
-    # calculates spherical r
-    def calc_r(self, v):
-        return math.sqrt(sum(map(lambda x:x*x, v)))
+    '''
+    This function will just wrap all of the other functions that make the fish move.
+    The function will simply take the school as a variable. There's also a verbose 
+    (ve) option. The function will basically calculate new angles and then move.
+    '''
+    def move(self, school, ve=False):
+        t, p = self.calculate_angle(school, ve) # calculate the new angles to move in
+        self.update_pos(t, p, ve) # now actually move
+        return
 
-    # update the position. X = Xo + dt*Vx, saying dt=1 for now
-    def update_pos(self):
+    '''
+    Update the position. This will take the new angles as arguments, and maybe other stuff, not sure yet,
+    but it'll actually move the fish. I didn't want to call the calculate angle in here so that it's more
+    modular and general.
+    '''
+    def update_pos(self, theta, phi, ve=False):
         '''
         my idea was to basically use the calculate angle function and assume
         radius 1 to get x, y, and z as a component wise vector. you can use
         wikipedia for the conversions and then what to do after that is in
-        the article
+        the article. You've done the angle work so now just get it to actually
+        move
         '''
-        x = self.pos[0] + self.dt
-        y = self.pos[1] + self.dt
-        z = self.pos[2] + self.dt
+
+
+        x = self.pos[0] + self.dt 
+        y = self.pos[1] + self.dt 
+        z = self.pos[2] + self.dt 
 
         self.pos = list(map(operator.add, (self.pos), (self.vel)))
         return
@@ -69,7 +82,7 @@ class fish():
     this is what determines where each fish goes. School is a list containing
     all the fishies.
     '''
-    def calculate_angle(self, school, ve=True):
+    def calculate_angle(self, school, ve=False):
         # here i'll store the thetas and phis I calculate for each other fish
         # and then I'll average them. So it's deciding for each fish what to do
         # and then averaging all of those decisions.
@@ -132,6 +145,7 @@ class fish():
                 # average the angles
                 theta_avg = (theta + self.ang[0])/2
                 phi_avg = (phi + self.ang[1])/2
+
             # End of the else statements
             # Now apply the angular noise variation
             theta_avg = theta_avg*((random.random()*2*self.noise[1]) - self.noise[1])
@@ -145,8 +159,12 @@ class fish():
         t = sum(thetas)/len(thetas)
         p = sum(phis)/len(phis)
 
-        # and return the new angles
+        # and return the new angles theta and phi
         return t, p
+
+    # calculates spherical r
+    def calc_r(self, v):
+        return math.sqrt(sum(map(lambda x:x*x, v)))
 
     # some functions to get variables
     def get_pos(self):
