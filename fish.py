@@ -69,7 +69,6 @@ class fish():
         move
         '''
 
-
         x = self.pos[0] + self.dt 
         y = self.pos[1] + self.dt 
         z = self.pos[2] + self.dt 
