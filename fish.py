@@ -36,7 +36,7 @@ class fish():
         # init pos and velocity
         self.pos = [round(random.random()*self.max_init_pos) for i in range(3) ]
         self.vel = [round(random.random()*self.max_init_vel) for i in range(3) ]
-        self.r = calc_r(self.pos) # calculate r
+        self.r = self.calc_r(self.pos) # calculate r
 
         # now init the angle. times i cause theta is from 0 to pi and phi
         # is from 0 to 2*pi where i just conveniently works for the 2
@@ -47,7 +47,7 @@ class fish():
 
     '''
     This function will just wrap all of the other functions that make the fish move.
-    The function will simply take the school as a variable. There's also a verbose 
+    The function will simply take the school as a variable. There's also a verbose
     (ve) option. The function will basically calculate new angles and then move.
     '''
     def move(self, school, ve=False):
@@ -66,12 +66,12 @@ class fish():
         radius 1 to get x, y, and z as a component wise vector. you can use
         wikipedia for the conversions and then what to do after that is in
         the article. You've done the angle work so now just get it to actually
-        move
+        move. just checking stuff
         '''
 
-        x = self.pos[0] + self.dt 
-        y = self.pos[1] + self.dt 
-        z = self.pos[2] + self.dt 
+        x = self.pos[0] + self.dt
+        y = self.pos[1] + self.dt
+        z = self.pos[2] + self.dt
 
         self.pos = list(map(operator.add, (self.pos), (self.vel)))
         return
