@@ -29,11 +29,11 @@ class fish():
     max_init_pos = 8 # can start randomly in a 200x200 box (unitless)
 
     '''
-    This is the init function. In this, we just set some basic variables, init
-    the position and velocity, solve for the spherical unit r, and initialize
-    the angle.
+    # This is the init function. In this, we just set some basic variables, init
+    # the position and velocity, solve for the spherical unit r, and initialize
+    # the angle.
     '''
-    def __init__(self, r=[12,55,150], v=5):
+    def __init__(self, r, v):
         # set constraints on movement
         self.radii = r # init the radii
         self.noise = [0.2, 0.55] # setting the random noises
@@ -52,9 +52,9 @@ class fish():
         return
 
     '''
-    This function will just wrap all of the other functions that make the fish move.
-    The function will simply take the school as a variable. There's also a verbose
-    (ve) option. The function will basically calculate new angles and then move.
+    # This function will just wrap all of the other functions that make the fish move.
+    # The function will simply take the school as a variable. There's also a verbose
+    # (ve) option. The function will basically calculate new angles and then move.
     '''
     def move(self, school, ve=False):
         t, p = self.calculate_angle(school, ve) # calculate the new angles to move in
@@ -62,9 +62,9 @@ class fish():
         return
 
     '''
-    Update the position. This will take the new angles as arguments, and maybe other stuff, not sure yet,
-    but it'll actually move the fish. I didn't want to call the calculate angle in here so that it's more
-    modular and general.
+    # Update the position. This will take the new angles as arguments, and maybe other stuff, not sure yet,
+    # but it'll actually move the fish. I didn't want to call the calculate angle in here so that it's more
+    # modular and general.
     '''
     def update_pos(self, theta, phi, ve=False):
         # get vector components vx, vy, and vz. Here, I assume normalized radius 1,
@@ -93,16 +93,9 @@ class fish():
         return # end
 
     '''
-    This function will update the velocity.
-    '''
-    def update_vel(self):
-
-        return # return
-
-    '''
-    Calculating the angle. Turns out this is the bulk of the work because
-    this is what determines where each fish goes. School is a list containing
-    all the fishies.
+    # Calculating the angle. Turns out this is the bulk of the work because
+    # this is what determines where each fish goes. School is a list containing
+    # all the fishies.
     '''
     def calculate_angle(self, school, ve=False):
         # here i'll store the thetas and phis I calculate for each other fish
@@ -184,22 +177,61 @@ class fish():
         # and return the new angles theta and phi
         return t, p
 
+    '''
     # calculates spherical r
+    '''
     def calc_r(self, v):
         return math.sqrt(sum(map(lambda x:x*x, v)))
 
+    '''
     # some functions to get variables
+    '''
     def get_pos(self):
         return self.pos
     def get_ang(self):
         return self.ang
 '''
-# this function will drive the code so that I can easily just pass different
-# parameters and it'll simulate and plot etc
+# This is going to be the driver class. I'm naming it will basically drive the program
 '''
-def driver():
-    return
+class driver():
+
+    # Declaring variables. If it's set to something, it's a somewhat arbitrary
+    # default choice right now.
+    school = []
+    radii = [12,55,150]
+    velocity = 5
+    N = 2 # numer of fish
+
+    '''
+    # The init function. This will create N fish and store them in school
+    '''
+    def __init__(self, N):
+
+        # stoure user inputed number of fish. default 500
+        self.N = N
+
+        # create and store N fish
+        for i in range(N):
+            self.school.append(fish(r=self.radii, v=self.velocity)) # create each fish.
+
+        return
+
+    '''
+    # Drives the simulation of the motion of the fish and stores the data
+    '''
+    def simulate(self, timesteps=1000):
+
+        return
+
+    '''
+    # Plots the simulation data
+    '''
+    def plot(self):
+        return
+
+'''
 # main method
+'''
 def main():
     radii = [150, 55, 12] # of attract, orientation, and repulsion
     fishes = [] # hold the fishies
@@ -210,7 +242,5 @@ def main():
     # test stuff
     fishes[0].calculate_angle(fishes)
     return
-
 # call main method
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__':main()
