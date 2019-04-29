@@ -201,6 +201,8 @@ class driver():
     radii = [12,55,150]
     velocity = 5
     N = 2 # numer of fish
+    positions = [] # the positions of each fish stored over time
+    angles = [] # angles of each fish over time
 
     '''
     # The init function. This will create N fish and store them in school
@@ -213,6 +215,8 @@ class driver():
         # create and store N fish
         for i in range(N):
             self.school.append(fish(r=self.radii, v=self.velocity)) # create each fish.
+            self.positions.append([fish.get_pos() for fish in self.school]) # store positions
+            self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
 
         return
 
@@ -220,6 +224,13 @@ class driver():
     # Drives the simulation of the motion of the fish and stores the data
     '''
     def simulate(self, timesteps=1000):
+
+        # at each time step itearte over each fish and make them move
+        for dt in range(timesteps): # iterate over each timestep
+            for fish in self.school: # iterate over each fish now
+                fish.move(self.school, ve=False) # move the fishy
+                self.positions.append([fish.get_pos() for fish in self.school]) # store positions
+                self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
 
         return
 
