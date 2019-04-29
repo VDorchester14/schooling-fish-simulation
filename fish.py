@@ -7,6 +7,8 @@ import numpy as np
 import random
 import math
 import operator
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 '''
 # This here is my fishy
@@ -33,7 +35,7 @@ class fish():
     # the position and velocity, solve for the spherical unit r, and initialize
     # the angle.
     '''
-    def __init__(self, r, v):
+    def __init__(self, r=[12,55,150], v=5):
         # set constraints on movement
         self.radii = r # init the radii
         self.noise = [0.2, 0.55] # setting the random noises
@@ -86,9 +88,9 @@ class fish():
         z = self.pos[2] + (self.dt * vz * self.vel * ((random.random()*2*self.noise[0]) - self.noise[0])) # z
 
         # now update the positions
-        self.pos[0] = x
-        self.pos[1] = y
-        self.pos[2] = z
+        self.pos[0] = round(x, 4)
+        self.pos[1] = round(y, 4)
+        self.pos[2] = round(z, 4)
 
         return # end
 
@@ -198,8 +200,6 @@ class driver():
     # Declaring variables. If it's set to something, it's a somewhat arbitrary
     # default choice right now.
     school = []
-    radii = [12,55,150]
-    velocity = 5
     N = 2 # numer of fish
     positions = [] # the positions of each fish stored over time
     angles = [] # angles of each fish over time
@@ -207,16 +207,13 @@ class driver():
     '''
     # The init function. This will create N fish and store them in school
     '''
-    def __init__(self, N):
+    def __init__(self, school):
 
         # stoure user inputed number of fish. default 500
-        self.N = N
-
-        # create and store N fish
-        for i in range(N):
-            self.school.append(fish(r=self.radii, v=self.velocity)) # create each fish.
-            self.positions.append([fish.get_pos() for fish in self.school]) # store positions
-            self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
+        self.school = school
+        self.positions.append([fish.get_pos() for fish in self.school]) # store positions
+        self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
+        self.N = len(school)
 
         return
 
@@ -229,8 +226,8 @@ class driver():
         for dt in range(timesteps): # iterate over each timestep
             for fish in self.school: # iterate over each fish now
                 fish.move(self.school, ve=False) # move the fishy
-                self.positions.append([fish.get_pos() for fish in self.school]) # store positions
-                self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
+            self.positions.append([fish.get_pos() for fish in self.school]) # store positions
+            self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
 
         return
 
@@ -238,20 +235,35 @@ class driver():
     # Plots the simulation data
     '''
     def plot(self):
+
         return
+
+    '''
+    # A couple functions to print values for debugging.
+    '''
+    def get_positions(self):
+        return self.positions
+    def get_angles(self):
+        return self.angles
 
 '''
 # main method
 '''
 def main():
-    radii = [150, 55, 12] # of attract, orientation, and repulsion
-    fishes = [] # hold the fishies
+    radii = [12,55,150]
+    velocity = 5
+    N = 30 # number of fish
 
-    # init two fish to test with
-    for i in range(2):
-        fishes.append(fish(radii))
-    # test stuff
-    fishes[0].calculate_angle(fishes)
+    # make the school
+    print("Making fish...")
+    school = []
+    for i in range(N):
+        school.append(fish())
+
+    print("Simulating...")
+    drive = driver(school)
+    drive.simulate()
+
     return
 # call main method
 if __name__ == '__main__':main()
