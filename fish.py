@@ -8,6 +8,9 @@ import random
 import math
 import operator
 
+'''
+# This here is my fishy
+'''
 class fish():
 
     # various variables
@@ -24,10 +27,13 @@ class fish():
 
     # init boundary conditions
     max_init_pos = 8 # can start randomly in a 200x200 box (unitless)
-    max_init_vel = 5 # max component-wise initial velocity
 
-    # init
-    def __init__(self, r=[12,55,150]):
+    '''
+    This is the init function. In this, we just set some basic variables, init
+    the position and velocity, solve for the spherical unit r, and initialize
+    the angle.
+    '''
+    def __init__(self, r=[12,55,150], v=5):
         # set constraints on movement
         self.radii = r # init the radii
         self.noise = [0.2, 0.55] # setting the random noises
@@ -35,7 +41,7 @@ class fish():
 
         # init pos and velocity
         self.pos = [round(random.random()*self.max_init_pos) for i in range(3) ]
-        self.vel = [round(random.random()*self.max_init_vel) for i in range(3) ]
+        self.vel = v
         self.r = self.calc_r(self.pos) # calculate r
 
         # now init the angle. times i cause theta is from 0 to pi and phi
@@ -52,7 +58,7 @@ class fish():
     '''
     def move(self, school, ve=False):
         t, p = self.calculate_angle(school, ve) # calculate the new angles to move in
-        self.update_pos(t, p, ve) # now actually move
+        self.update_pos(t, p, ve) # move to new position
         return
 
     '''
@@ -61,20 +67,37 @@ class fish():
     modular and general.
     '''
     def update_pos(self, theta, phi, ve=False):
-        '''
-        my idea was to basically use the calculate angle function and assume
-        radius 1 to get x, y, and z as a component wise vector. you can use
-        wikipedia for the conversions and then what to do after that is in
-        the article. You've done the angle work so now just get it to actually
-        move. just checking stuff
-        '''
+        # get vector components vx, vy, and vz. Here, I assume normalized radius 1,
+        # and use spherical coordinate conversions to get the cartesian vector
+        # that corresponds to the previously calculated theta and phi. This vector
+        # is helpful because it has components x, y, z.
+        vx = np.sin(theta)*np.cos(phi)
+        vy = np.sin(theta)*np.sin(phi)
+        vz = np.cos(theta)
 
-        x = self.pos[0] + self.dt
-        y = self.pos[1] + self.dt
-        z = self.pos[2] + self.dt
+        if(ve):print(vx,vy,vz) # verbose
 
-        self.pos = list(map(operator.add, (self.pos), (self.vel)))
-        return
+        # calculate the new position in each of the principal directions.
+        # the equation is initial position plus the quantity of the
+        # timestep multiplied by the directional component by the velocity
+        # constant by the noise.
+        x = self.pos[0] + (self.dt * vx * self.vel * ((random.random()*2*self.noise[0]) - self.noise[0])) # x
+        y = self.pos[1] + (self.dt * vy * self.vel * ((random.random()*2*self.noise[0]) - self.noise[0])) # y
+        z = self.pos[2] + (self.dt * vz * self.vel * ((random.random()*2*self.noise[0]) - self.noise[0])) # z
+
+        # now update the positions
+        self.pos[0] = x
+        self.pos[1] = y
+        self.pos[2] = z
+
+        return # end
+
+    '''
+    This function will update the velocity.
+    '''
+    def update_vel(self):
+
+        return # return
 
     '''
     Calculating the angle. Turns out this is the bulk of the work because
@@ -170,8 +193,12 @@ class fish():
         return self.pos
     def get_ang(self):
         return self.ang
-
-
+'''
+# this function will drive the code so that I can easily just pass different
+# parameters and it'll simulate and plot etc
+'''
+def driver():
+    return
 # main method
 def main():
     radii = [150, 55, 12] # of attract, orientation, and repulsion
