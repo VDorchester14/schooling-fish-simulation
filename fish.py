@@ -155,7 +155,8 @@ class fish():
                 count += self.weights[1]
             elif(d < self.radii[1]): # if it's in the radius of orientation
                 # vector pointing from self to other
-                v = list(map(operator.add, other_ang, self.ang)) # add both vectors
+                own = [ x * 1.2 for x in self.ang]
+                v = list(map(operator.add, other_ang, own)) # add both vectors
                 v_norm = [i/2 for i in v] # average them
                 v_norm = [m * self.weights[2] for m in v_norm] # orientation weight
                 count += self.weights[2]
@@ -195,13 +196,13 @@ class fish():
         z_norm = (sum(zs)/count)*(1 + self.noise[1]*1.3*(random.random())) # average z with some noise
 
         # normalize them again
-        k = math.sqrt(x_norm**2 + y_norm**2 + z_norm**2)
+        k = np.linalg.norm([x_norm, y_norm, z_norm])#math.sqrt(x_norm**2 + y_norm**2 + z_norm**2)
         #print(k)
         vx = x_norm/k
         vy = y_norm/k
         vz = z_norm/k
 
-        return x_norm, y_norm, z_norm
+        return vx, vy, vz
 
     '''
     # some functions to get variables
@@ -341,7 +342,7 @@ class driver():
                 #print(self.p_xyz[0])
                 self.s_quiv.remove()
                 self.s_quiv = ax.scatter(*s, s=20, c='r')
-            self.plt_title.set_text("School at timestep {0}, N={1}, weights={2}, radii={3}".format(i, self.N, weights, radii))
+            self.plt_title.set_text("School at timestep {0}, N={1}\nweights={2}, radii={3}".format(i, self.N, weights, radii))
             self.ax.set_xlim(auto=True)
             self.ax.set_ylim(auto=True)
             self.ax.set_zlim(auto=True)
@@ -363,7 +364,7 @@ class driver():
             self.s_quiv = s_quiv
 
         # this creates the initial progress line
-        title = plt.title("School at timestep {0}, N={1}, weights={2}, radii={3}".format(0, self.N, weights, radii))
+        title = plt.title("School at timestep {0}, N={1}\nweights={2}, radii={3}".format(0, self.N, weights, radii))
 
         # this creates the instance variables
         self.quiv = quiv # sets an instance variable that update_quiver can access
@@ -497,20 +498,20 @@ class shark():
 # main method
 '''
 def main():
-    radii = [5,40,160, 30] # repulsion, orientation, attraction, fleeing
-    velocity = 4 # fish velocity
-    noise = [0.64, 0.05] # velocity and angle noise
-    weights = [2.0, 0.7, 0.5, 0.5, 1500] # attraction, repulsion, orientation, self, flee
-    N = 5 # number of fish
-    sh = True
-    frames = 500 # frames to animate
+    radii = [12,60,160, 100] # repulsion, orientation, attraction, fleeing
+    velocity = 6 # fish velocity
+    noise = [0.1, 0.25] # velocity and angle noise
+    weights = [1.5, 0.7, 1.0, 0.2, 150] # attraction, repulsion, orientation, self, flee
+    N = 50 # nmber of fish
+    sh = False
+    frames = 400 # frames to animate
     outfile = 'output.gif'
 
     # make the school
     print("Making {0} fish...".format(N))
     school = []
     for i in range(N):
-        school.append(fish(r=radii, v=velocity))
+        school.append(fish(r=radii, v=velocity, weights=weights))
 
     pred = None
     if(sh):
