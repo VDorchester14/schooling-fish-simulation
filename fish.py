@@ -375,7 +375,8 @@ class driver():
         print("animating")
         ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 50, blit=False, repeat=True)
         dir = os.getcwd()
-        ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\outputs\\'+filename, writer='imagemagick')
+        print(dir)
+        ani.save(dir+'\\outputs\\'+filename, writer='imagemagick')
 
         # more formatting
         plt.xlabel("x")
