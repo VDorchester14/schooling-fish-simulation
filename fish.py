@@ -294,6 +294,7 @@ class driver():
             self.positions.append([xs, ys, zs, local_xs, local_ys, local_zs]) # store positions
             #self.angles.append([local_xs, local_ys, local_zs]) # store the angles
         if(self.pred != None):
+            #print(len(px))
             self.p_xyz = [px, py, pz]
             self.p_lxyz = [plx, ply, plz]
 
@@ -324,9 +325,9 @@ class driver():
             return x,y,z,u,v,w
         # get shark quiver
         def get_s_quiv(i):
-            x = self.p_xyz[0]
-            y = self.p_xyz[1]
-            z = self.p_xyz[2]
+            x = self.p_xyz[0][i]
+            y = self.p_xyz[1][i]
+            z = self.p_xyz[2][i]
             return x,y,z
 
         # this does the animating of the quiver
@@ -337,7 +338,9 @@ class driver():
             self.quiv = ax.quiver(*q, normalize=True, length=5) # replot
             if(self.pred != None):
                 s = get_s_quiv(i)
-                self.s_quiv = ax.scatter(*s, s=30, c='r')
+                #print(self.p_xyz[0])
+                self.s_quiv.remove()
+                self.s_quiv = ax.scatter(*s, s=20, c='r')
             self.plt_title.set_text("School at timestep {0}, N={1}, weights={2}, radii={3}".format(i, self.N, weights, radii))
             self.ax.set_xlim(auto=True)
             self.ax.set_ylim(auto=True)
@@ -355,7 +358,6 @@ class driver():
 
         # shark
         if(self.pred != None):
-            print("Plotting shark")
             s_data = get_s_quiv(0)
             s_quiv = ax.scatter(*s_data)
             self.s_quiv = s_quiv
@@ -369,6 +371,7 @@ class driver():
         self.ax = ax # set ax to be animated
 
         # Animation to do
+        print("animating")
         ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 50, blit=False, repeat=True)
         dir = os.getcwd()
         ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\outputs\\'+filename, writer='imagemagick')
@@ -396,10 +399,10 @@ class shark():
     lxyz = [] # local x, y, z (angles)
     dt = 0.25
     velocity = 0
-    vnoise = 0.3
+    vnoise = 0.01
     school = []
     max_in_x = 30
-    radius = 100
+    radius = 200
     # initialize the thing
     def __init__(self, v=4):
         self.velocity = v
@@ -430,11 +433,14 @@ class shark():
         for fish in self.school:
             dir = [0,0,0]
             other_pos = fish.get_pos() # gonna be using this so may as well store it
-            d = round(math.sqrt(sum([(a - b) ** 2 for a, b in zip(other_pos, self.xyz)])), 3)
+            d = abs(round(math.sqrt(sum([(a - b) ** 2 for a, b in zip(other_pos, self.xyz)])), 3))
             if(d < self.radius): # in radius of attraction
                 dir = map(operator.sub, other_pos, self.xyz) # weight inverse to distance
-                dir = [ d * (1/d) for d in dir]
-                count += float((1/d))
+                #dir = [ d * (1/d) for d in dir]
+                count += 1#(1/d)
+            else:
+                dir = [i * 1 for i in self.lxyz]
+                count += 1
             xs.append(dir[0]) # append weighted x
             ys.append(dir[1]) # append weighted y
             zs.append(dir[2]) # append weighted z
@@ -442,6 +448,14 @@ class shark():
         x = sum(xs)/count
         y = sum(ys)/count
         z = sum(zs)/count
+
+        # normalize them again
+        k = math.sqrt(x**2 + y**2 + z**2)
+        #print(k)
+        x = x/k
+        y = y/k
+        z = z/k
+
         return x, y, z
 
     # updates angle
@@ -483,13 +497,13 @@ class shark():
 # main method
 '''
 def main():
-    radii = [5,40,160, 30] # repulsion, orientation, attraction
-    velocity = 2 # fish velocity
+    radii = [5,40,160, 30] # repulsion, orientation, attraction, fleeing
+    velocity = 4 # fish velocity
     noise = [0.64, 0.05] # velocity and angle noise
-    weights = [2.0, 0.7, 0.5, 0.5, 0.3] # attraction, repulsion, orientation, self
-    N = 20 # number of fish
+    weights = [2.0, 0.7, 0.5, 0.5, 1500] # attraction, repulsion, orientation, self, flee
+    N = 5 # number of fish
     sh = True
-    frames = 300 # frames to animate
+    frames = 500 # frames to animate
     outfile = 'output.gif'
 
     # make the school
@@ -502,7 +516,7 @@ def main():
     if(sh):
         # make predator
         print("Making predator...")
-        pred = shark(4) # create with v = 4
+        pred = shark(6) # create with v = 4
         pred.set_school(school) # assign school
         for f in school: # assign pred to each fish
             f.set_shark(pred) # set shark in each school
