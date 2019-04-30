@@ -498,12 +498,12 @@ class shark():
 # main method
 '''
 def main():
-    radii = [12,60,160, 100] # repulsion, orientation, attraction, fleeing
+    radii = [32,40,160, 100] # repulsion, orientation, attraction, fleeing
     velocity = 6 # fish velocity
     noise = [0.1, 0.25] # velocity and angle noise
-    weights = [1.5, 0.7, 1.0, 0.2, 150] # attraction, repulsion, orientation, self, flee
+    weights = [4, 1.2, 1.0, 0.2, 30] # attraction, repulsion, orientation, self, flee
     N = 50 # nmber of fish
-    sh = False
+    sh = True
     frames = 400 # frames to animate
     outfile = 'output.gif'
 
