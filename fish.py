@@ -7,12 +7,16 @@ import numpy as np
 import random
 import math
 import operator
+import matplotlib
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import pandas as pd
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 from sklearn.preprocessing import normalize
+from matplotlib import animation, rc
+from IPython.display import HTML, Image
+import os
 
 '''
 # This here is my fishy
@@ -22,7 +26,7 @@ class fish():
     # various variables
     radii = [] # radius of repulsion, orientation, and attraction
     noise = [0.02, 0.035] # velocity and angle noise
-    weights = [1.2, 0.7] # Attraction & repulsion weights
+    weights = [1.2, 0.7, 0.9, 1.0] # Attraction & repulsion weights, orientation weights, self
 
     # physical properties position and velocity
     pos = [] # componentwise position
@@ -39,11 +43,11 @@ class fish():
     # the position and velocity, solve for the spherical unit r, and initialize
     # the angle.
     '''
-    def __init__(self, r=[12,20,150], v=5, noise = [0.02, 0.035]):
+    def __init__(self, r=[12,20,150], v=5, noise = [0.02, 0.035], weights = [1.5, 0.7, 0.9, 1.0]):
         # set constraints on movement
         self.radii = r # init the radii
         self.noise = noise # setting the random noises
-        self.weights = [1.5, 0.7] # setting the weights
+        self.weights = weights # setting the weights
 
         # init pos and velocity
         self.pos = [((random.random()*2*self.max_init_pos) - self.max_init_pos) for i in range(3) ]
@@ -51,7 +55,7 @@ class fish():
 
         # now init the angle. times i cause theta is from 0 to pi and phi
         # is from 0 to 2*pi where i just conveniently works for the 2
-        self.ang = [0, 0, 0]
+        self.ang = [random.random(), random.random(), random.random()]
 
         # return
         return
@@ -97,9 +101,9 @@ class fish():
         # the equation is initial position plus the quantity of the
         # timestep multiplied by the directional component by the velocity
         # constant by the noise.
-        dx = (self.dt * vx * self.vel )#* ((random.random()*2*self.noise[0]) - self.noise[0])) # dx
-        dy = (self.dt * vy * self.vel )#* ((random.random()*2*self.noise[0]) - self.noise[0])) # dy
-        dz = (self.dt * vz * self.vel )#* ((random.random()*2*self.noise[0]) - self.noise[0])) # dz
+        dx = (self.dt * vx * self.vel ) * ( 1 + random.random()*self.noise[0]) # dx
+        dy = (self.dt * vy * self.vel ) * ( 1 + random.random()*self.noise[0]) # dy
+        dz = (self.dt * vz * self.vel ) * ( 1 + random.random()*self.noise[0]) # dz
         x = self.pos[0] + dx # x
         y = self.pos[1] + dy # y
         z = self.pos[2] + dz # z
@@ -134,36 +138,41 @@ class fish():
 
             # now do things with that distance
             if(d == 0): # if it's this fish
-                v_norm = self.get_local_xyz()
+                v_norm = self.get_local_xyz() # get own angle
+                v_norm = [m * self.weights[3] for m in v_norm] # self weight
             elif(d < self.radii[0]): # if it's in the radius of repulsion
-                v = np.array(list(map(operator.sub, self.pos, other_pos)))
-                vs = sum([i**2 for i in v])**0.5
-                v_norm = [i/vs for i in v]
+                v = list(map(operator.sub, self.pos, other_pos)) # from other to self
+                vs = sum([i**2 for i in v])**0.5 # getting square of quad
+                v_norm = [i/vs for i in v] # normalizing
+                v_norm = [m * self.weights[1] for m in v_norm] # repulsion weight
             elif(d < self.radii[1]): # if it's in the radius of orientation
                 # vector pointing from self to other
-                v = np.array(list(map(operator.add, other_ang, self.ang)))
-                v_norm = [i/2 for i in v]
-
+                v = list(map(operator.add, other_ang, self.ang)) # add both vectors
+                v_norm = [i/2 for i in v] # average them
+                v_norm = [m * self.weights[2] for m in v_norm] # orientation weight
             elif(d < self.radii[2]): # if it's in radius of attraction
                 # vector pointing from self to other
-                v = np.array(list(map(operator.sub, other_pos, self.pos)))
-                vs = sum([i**2 for i in v])**0.5
-                v_norm = [i/vs for i in v]
+                v = list(map(operator.sub, other_pos, self.pos)) # frin sekf to other
+                vs = sum([i**2 for i in v])**0.5 # square of quadrature
+                v_norm = [i/vs for i in v] # normalized
+                v_norm = [m * self.weights[0] for m in v_norm] # attraction weight
             else:
                 #print('too far')
-                v_norm = list(self.get_local_xyz())
+                v_norm = list(self.get_local_xyz()) # else self weight
+                v_norm = [m * self.weights[3] for m in v_norm] # self weight
                 #continue
-            xs.append(v_norm[0])
-            ys.append(v_norm[1])
-            zs.append(v_norm[2])
+            xs.append(v_norm[0]) # append weighted x
+            ys.append(v_norm[1]) # append weighted y
+            zs.append(v_norm[2]) # append weighted z
 
         # average these measurements
-        x_norm = (sum(xs)/len(xs))*(1 + self.noise[1]*(random.random()*2 - 1))
-        y_norm = (sum(ys)/len(ys))*(1 + self.noise[1]*(random.random()*2 - 1))
-        z_norm = (sum(zs)/len(zs))*(1 + self.noise[1]*(random.random()*2 - 1))
+        x_norm = (sum(xs)/len(xs))*(1 + self.noise[1]*2*(random.random())) # average x with some noise
+        y_norm = (sum(ys)/len(ys))*(1 + self.noise[1]*2*(random.random())) # average y with some noise
+        z_norm = (sum(zs)/len(zs))*(1 + self.noise[1]*(random.random())) # average z with some noise
 
         # normalize them again
         k = math.sqrt(x_norm**2 + y_norm**2 + z_norm**2)
+        #print(k)
         vx = x_norm/k
         vy = y_norm/k
         vz = z_norm/k
@@ -255,16 +264,12 @@ class driver():
         # this does the animating of the quiver
         def update_quiver(i):
             self.quiv.remove() # clera old plot
-            self.quiv = ax.quiver(*get_quiv(i), length=15) # replot
+            self.quiv = ax.quiver(*get_quiv(i), length=10) # replot
+            self.quiv.set_linewidth(3)
             self.plt_title.set_text("School at timestep {0}".format(i))
             self.ax.set_xlim(auto=True)
             self.ax.set_ylim(auto=True)
             self.ax.set_zlim(auto=True)
-            return
-
-        # This will animate the bar to show progress
-        def update_frame_count(i):
-            self.plt_title.set_text("School at timestep {0}".format(i))
             return
 
         # this sets the limits of our quiver plot
@@ -274,7 +279,7 @@ class driver():
 
         # this creates the initial quiver
         data = get_quiv(0)
-        quiv = ax.quiver(*data, length=15)
+        quiv = ax.quiver(*data, length=10)
 
         # this creates the initial progress line
         title = plt.title("School at timestep {0}".format(0))
@@ -286,7 +291,8 @@ class driver():
 
         # Animation to do
         ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 10, blit=False, repeat=True)
-        #ani = FuncAnimation(fig, update_frame_count, frames = self.timesteps, interval = 20, blit=False)
+        dir = os.getcwd()
+        ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\school.gif', writer='imagemagick')
 
         # more formatting
         plt.xlabel("x")
@@ -308,10 +314,11 @@ class driver():
 # main method
 '''
 def main():
-    radii = [12,30,150]
-    velocity = 5
-    noise = [0.2, 0.35] # velocity and angle noise
-    N = 250 # number of fish
+    radii = [20,40,150] # repulsion, orientation, attraction
+    velocity = 3 # fish velocity
+    noise = [0.1, 0.25] # velocity and angle noise
+    weights = [1.8, 0.7, 0.3, 0.4] # attraction, repulsion, orientation, self
+    N = 80 # number of fish
 
     # make the school
     print("Making {0} fish...".format(N))
@@ -322,7 +329,7 @@ def main():
     print("Simulating...")
     drive = driver(school)
     #drive.plot()
-    drive.simulate(800)
+    drive.simulate(1000)
 
     print("Plotting...")
     drive.plot()
