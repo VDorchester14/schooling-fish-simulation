@@ -375,7 +375,8 @@ class driver():
         print("animating")
         ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 50, blit=False, repeat=True)
         dir = os.getcwd()
-        ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\outputs\\'+filename, writer='imagemagick')
+        print(dir)
+        ani.save(dir+'\\outputs\\'+filename, writer='imagemagick')
 
         # more formatting
         plt.xlabel("x")
@@ -498,11 +499,11 @@ class shark():
 # main method
 '''
 def main():
-    radii = [12,60,160, 100] # repulsion, orientation, attraction, fleeing
+    radii = [50,60,120, 100] # repulsion, orientation, attraction, fleeing
     velocity = 6 # fish velocity
-    noise = [0.1, 0.25] # velocity and angle noise
-    weights = [1.5, 0.7, 1.0, 0.2, 150] # attraction, repulsion, orientation, self, flee
-    N = 50 # nmber of fish
+    noise = [0.5, 0.25] # velocity and angle noise
+    weights = [4, 1, 1.0, 0.2, 150] # attraction, repulsion, orientation, self, flee
+    N = 40 # nmber of fish
     sh = False
     frames = 400 # frames to animate
     outfile = 'output.gif'
