@@ -8,7 +8,10 @@ import random
 import math
 import operator
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+import mpl_toolkits.mplot3d.axes3d as p3
+import pandas as pd
+import matplotlib.animation as animation
+from matplotlib.animation import FuncAnimation
 
 '''
 # This here is my fishy
@@ -17,18 +20,18 @@ class fish():
 
     # various variables
     radii = [] # radius of repulsion, orientation, and attraction
-    noise = [0.2, 0.35] # velocity and angle noise
-    weights = [1.5, 0.7] # Attraction & repulsion weights
+    noise = [0.02, 0.035] # velocity and angle noise
+    weights = [2.5, 0.7] # Attraction & repulsion weights
 
     # physical properties position and velocity
     pos = [] # componentwise position
     r = 0.0 # spherical r
     vel = [] # componentwise velocity
     ang = [] # angles theta, phi using spherical (phi is azimuthal)
-    dt = 0.25 # the timestep
+    dt = 1 # the timestep
 
     # init boundary conditions
-    max_init_pos = 8 # can start randomly in a 200x200 box (unitless)
+    max_init_pos = 50 # can start randomly in a 200x200 box (unitless)
 
     '''
     # This is the init function. In this, we just set some basic variables, init
@@ -60,7 +63,16 @@ class fish():
     '''
     def move(self, school, ve=False):
         t, p = self.calculate_angle(school, ve) # calculate the new angles to move in
+        self.update_angles(t,p) # update with new angle
         self.update_pos(t, p, ve) # move to new position
+        return
+
+    '''
+    # just updates angles
+    '''
+    def update_angles(self, t, p):
+        self.ang[0] = t # update theta
+        self.ang[1] = p # update phi
         return
 
     '''
@@ -73,11 +85,13 @@ class fish():
         # and use spherical coordinate conversions to get the cartesian vector
         # that corresponds to the previously calculated theta and phi. This vector
         # is helpful because it has components x, y, z.
+        #print(theta, phi)
         vx = np.sin(theta)*np.cos(phi)
         vy = np.sin(theta)*np.sin(phi)
         vz = np.cos(theta)
 
         if(ve):print(vx,vy,vz) # verbose
+        #print(vx, vy, vz)
 
         # calculate the new position in each of the principal directions.
         # the equation is initial position plus the quantity of the
@@ -162,6 +176,9 @@ class fish():
                 # average the angles
                 theta_avg = (theta + self.ang[0])/2
                 phi_avg = (phi + self.ang[1])/2
+            else:
+                theta_avg = self.get_ang()[0]
+                phi_avg = self.get_ang()[1]
 
             # End of the else statements
             # Now apply the angular noise variation
@@ -192,6 +209,13 @@ class fish():
         return self.pos
     def get_ang(self):
         return self.ang
+    def get_local_xyz(self):
+        theta = self.ang[0]
+        phi = self.ang[1]
+        vx = np.sin(theta)*np.cos(phi)
+        vy = np.sin(theta)*np.sin(phi)
+        vz = np.cos(theta)
+        return vx, vy, vz
 '''
 # This is going to be the driver class. I'm naming it will basically drive the program
 '''
@@ -201,8 +225,9 @@ class driver():
     # default choice right now.
     school = []
     N = 2 # numer of fish
-    positions = [] # the positions of each fish stored over time
+    positions = [] # each index cointains a 2d array of [[x values], [y values], [z values]]
     angles = [] # angles of each fish over time
+    timesteps = 10000 # number of timesteps
 
     '''
     # The init function. This will create N fish and store them in school
@@ -211,8 +236,8 @@ class driver():
 
         # stoure user inputed number of fish. default 500
         self.school = school
-        self.positions.append([fish.get_pos() for fish in self.school]) # store positions
-        self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
+        #self.positions.append([fish.get_pos() for fish in self.school]) # store positions
+        #self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
         self.N = len(school)
 
         return
@@ -220,14 +245,25 @@ class driver():
     '''
     # Drives the simulation of the motion of the fish and stores the data
     '''
-    def simulate(self, timesteps=1000):
+    def simulate(self, timesteps=10000):
+
+        self.timesteps = timesteps
 
         # at each time step itearte over each fish and make them move
         for dt in range(timesteps): # iterate over each timestep
             for fish in self.school: # iterate over each fish now
                 fish.move(self.school, ve=False) # move the fishy
-            self.positions.append([fish.get_pos() for fish in self.school]) # store positions
-            self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
+
+            xs = [fish.get_pos()[0] for fish in self.school] # get the x values of each fish
+            ys = [fish.get_pos()[1] for fish in self.school] # get the y values of each fish
+            zs = [fish.get_pos()[2] for fish in self.school] # get the z values of each fish
+
+            local_xs = [fish.get_local_xyz()[0] for fish in self.school]
+            local_ys = [fish.get_local_xyz()[1] for fish in self.school]
+            local_zs = [fish.get_local_xyz()[2] for fish in self.school]
+
+            self.positions.append([xs, ys, zs, local_xs, local_ys, local_zs]) # store positions
+            #self.angles.append([local_xs, local_ys, local_zs]) # store the angles
 
         return
 
@@ -235,9 +271,35 @@ class driver():
     # Plots the simulation data
     '''
     def plot(self):
+        fig = plt.figure()
+        ax = p3.Axes3D(fig)
+
+        def get_quiv(i):
+            x = self.positions[i][0]
+            y = self.positions[i][1]
+            z = self.positions[i][2]
+            u = self.positions[i][3]
+            v = self.positions[i][4]
+            w = self.positions[i][5]
+            return x,y,z,u,v,w
+
+        ax.set_xlim([-60,60])
+        ax.set_ylim([-60,60])
+        ax.set_zlim([-60,60])
+
+        i=0
+        quiv = ax.quiver(self.positions[i][0], self.positions[i][1], self.positions[i][2],
+                        self.positions[i][3], self.positions[i][4], self.positions[i][5], length=15)
+
+        # this does the animating
+        def update_quiver(i, quiv):
+            quiv.remove()
+            quiv = ax.quiver(*get_quiver(i))
+
+        ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, fargs = ([quiv]), interval = 50, blit=False)
+        plt.show()
 
         return
-
     '''
     # A couple functions to print values for debugging.
     '''
@@ -251,18 +313,22 @@ class driver():
 '''
 def main():
     radii = [12,55,150]
-    velocity = 5
-    N = 30 # number of fish
+    velocity = 50
+    N = 3 # number of fish
 
     # make the school
-    print("Making fish...")
+    print("Making {0} fish...".format(N))
     school = []
     for i in range(N):
         school.append(fish())
 
     print("Simulating...")
     drive = driver(school)
-    drive.simulate()
+    #drive.plot()
+    drive.simulate(1500)
+
+    print("Plotting...")
+    drive.plot()
 
     return
 # call main method
