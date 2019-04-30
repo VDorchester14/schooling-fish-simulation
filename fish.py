@@ -126,6 +126,7 @@ class fish():
         xs = []
         ys = []
         zs = []
+        count = 0
         # iterate over each of the possible neighbors
         for fish in school:
             other_pos = fish.get_pos() # gonna be using this so may as well store it
@@ -140,35 +141,40 @@ class fish():
             if(d == 0): # if it's this fish
                 v_norm = self.get_local_xyz() # get own angle
                 v_norm = [m * self.weights[3] for m in v_norm] # self weight
+                count += self.weights[3]
             elif(d < self.radii[0]): # if it's in the radius of repulsion
                 v = list(map(operator.sub, self.pos, other_pos)) # from other to self
                 vs = sum([i**2 for i in v])**0.5 # getting square of quad
                 v_norm = [i/vs for i in v] # normalizing
                 v_norm = [m * self.weights[1] for m in v_norm] # repulsion weight
+                count += self.weights[1]
             elif(d < self.radii[1]): # if it's in the radius of orientation
                 # vector pointing from self to other
                 v = list(map(operator.add, other_ang, self.ang)) # add both vectors
                 v_norm = [i/2 for i in v] # average them
                 v_norm = [m * self.weights[2] for m in v_norm] # orientation weight
+                count += self.weights[2]
             elif(d < self.radii[2]): # if it's in radius of attraction
                 # vector pointing from self to other
                 v = list(map(operator.sub, other_pos, self.pos)) # frin sekf to other
                 vs = sum([i**2 for i in v])**0.5 # square of quadrature
                 v_norm = [i/vs for i in v] # normalized
                 v_norm = [m * self.weights[0] for m in v_norm] # attraction weight
+                count += self.weights[0]
             else:
                 #print('too far')
                 v_norm = list(self.get_local_xyz()) # else self weight
                 v_norm = [m * self.weights[3] for m in v_norm] # self weight
+                count += self.weights[3]
                 #continue
             xs.append(v_norm[0]) # append weighted x
             ys.append(v_norm[1]) # append weighted y
             zs.append(v_norm[2]) # append weighted z
 
         # average these measurements
-        x_norm = (sum(xs)/len(xs))*(1 + self.noise[1]*2*(random.random())) # average x with some noise
-        y_norm = (sum(ys)/len(ys))*(1 + self.noise[1]*2*(random.random())) # average y with some noise
-        z_norm = (sum(zs)/len(zs))*(1 + self.noise[1]*(random.random())) # average z with some noise
+        x_norm = (sum(xs)/count)*(1 + self.noise[1]*2*(random.random())) # average x with some noise
+        y_norm = (sum(ys)/count)*(1 + self.noise[1]*2*(random.random())) # average y with some noise
+        z_norm = (sum(zs)/count)*(1 + self.noise[1]*(random.random())) # average z with some noise
 
         # normalize them again
         k = math.sqrt(x_norm**2 + y_norm**2 + z_norm**2)
@@ -245,27 +251,34 @@ class driver():
     '''
     # Plots the simulation data
     '''
-    def plot(self):
+    def plot(self, filename):
 
         # here I initialize the figure and axes
         fig = plt.figure()
         ax = p3.Axes3D(fig)
 
         # this function here gets quiver data for a given timeframe index i
-        def get_quiv(i):
+        def get_quiv(i, f):
             x = self.positions[i][0]
             y = self.positions[i][1]
             z = self.positions[i][2]
             u = self.positions[i][3]
             v = self.positions[i][4]
             w = self.positions[i][5]
+
+            # scale angle
+            u = [ a*f for a in u]
+            v = [ b*f for b in v]
+            w = [ c*f for c in w]
             return x,y,z,u,v,w
 
         # this does the animating of the quiver
         def update_quiver(i):
             self.quiv.remove() # clera old plot
-            self.quiv = ax.quiver(*get_quiv(i), length=10) # replot
-            self.quiv.set_linewidth(3)
+            q = get_quiv(i, 5)
+
+            self.quiv = ax.quiver(*q) # replot
+            self.quiv.set_linewidth(2)
             self.plt_title.set_text("School at timestep {0}".format(i))
             self.ax.set_xlim(auto=True)
             self.ax.set_ylim(auto=True)
@@ -278,8 +291,8 @@ class driver():
         ax.set_zlim([-80,80])
 
         # this creates the initial quiver
-        data = get_quiv(0)
-        quiv = ax.quiver(*data, length=10)
+        data = get_quiv(0, 5)
+        quiv = ax.quiver(*data)
 
         # this creates the initial progress line
         title = plt.title("School at timestep {0}".format(0))
@@ -292,7 +305,7 @@ class driver():
         # Animation to do
         ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 10, blit=False, repeat=True)
         dir = os.getcwd()
-        ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\school.gif', writer='imagemagick')
+        ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\outputs\\'+filename, writer='imagemagick')
 
         # more formatting
         plt.xlabel("x")
@@ -314,11 +327,13 @@ class driver():
 # main method
 '''
 def main():
-    radii = [20,40,150] # repulsion, orientation, attraction
-    velocity = 3 # fish velocity
-    noise = [0.1, 0.25] # velocity and angle noise
-    weights = [1.8, 0.7, 0.3, 0.4] # attraction, repulsion, orientation, self
-    N = 80 # number of fish
+    radii = [35,40,160] # repulsion, orientation, attraction
+    velocity = 12 # fish velocity
+    noise = [0.1, 0.05] # velocity and angle noise
+    weights = [2.0, 0.7, 3.5, 0.5] # attraction, repulsion, orientation, self
+    N = 300 # number of fish
+    frames = 1500 # frames to animate
+    outfile = 'output.gif'
 
     # make the school
     print("Making {0} fish...".format(N))
@@ -329,10 +344,10 @@ def main():
     print("Simulating...")
     drive = driver(school)
     #drive.plot()
-    drive.simulate(1000)
+    drive.simulate(frames)
 
     print("Plotting...")
-    drive.plot()
+    drive.plot(outfile)
 
     return
 # call main method
