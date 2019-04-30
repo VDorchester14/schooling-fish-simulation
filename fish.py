@@ -24,7 +24,7 @@ import os
 class fish():
 
     # various variables
-    radii = [] # radius of repulsion, orientation, and attraction
+    radii = [] # radius of repulsion, orientation, and attraction, fleeing
     noise = [0.02, 0.035] # velocity and angle noise
     weights = [1.2, 0.7, 0.9, 1.0] # Attraction & repulsion weights, orientation weights, self
 
@@ -38,12 +38,15 @@ class fish():
     # init boundary conditions
     max_init_pos = 150 # can start randomly in a 200x200 box (unitless)
 
+    # predator
+    shark = None
+
     '''
     # This is the init function. In this, we just set some basic variables, init
     # the position and velocity, solve for the spherical unit r, and initialize
     # the angle.
     '''
-    def __init__(self, r=[12,20,150], v=5, noise = [0.02, 0.035], weights = [1.5, 0.7, 0.9, 1.0]):
+    def __init__(self, r=[12,20,150, 30], v=5, noise = [0.02, 0.035], weights = [1.5, 0.7, 0.9, 1.0, 10.0]):
         # set constraints on movement
         self.radii = r # init the radii
         self.noise = noise # setting the random noises
@@ -56,6 +59,8 @@ class fish():
         # now init the angle. times i cause theta is from 0 to pi and phi
         # is from 0 to 2*pi where i just conveniently works for the 2
         self.ang = [random.random(), random.random(), random.random()]
+
+        self.shark = None
 
         # return
         return
@@ -167,14 +172,27 @@ class fish():
                 v_norm = [m * self.weights[3] for m in v_norm] # self weight
                 count += self.weights[3]
                 #continue
+
+            # append angles
             xs.append(v_norm[0]) # append weighted x
             ys.append(v_norm[1]) # append weighted y
             zs.append(v_norm[2]) # append weighted z
 
+        # handle shark
+        if(self.shark!=None): # if there is a predator
+            sh_pos = self.shark.get_pos()
+            v = list(map(operator.sub, sh_pos, self.pos))
+            v_norm = [m * self.weights[4] for m in v_norm] # self weight
+            count += self.weights[4]
+        xs.append(v_norm[0]) # append weighted x
+        ys.append(v_norm[1]) # append weighted y
+        zs.append(v_norm[2]) # append weighted z
+
+
         # average these measurements
         x_norm = (sum(xs)/count)*(1 + self.noise[1]*2*(random.random())) # average x with some noise
         y_norm = (sum(ys)/count)*(1 + self.noise[1]*2*(random.random())) # average y with some noise
-        z_norm = (sum(zs)/count)*(1 + self.noise[1]*(random.random())) # average z with some noise
+        z_norm = (sum(zs)/count)*(1 + self.noise[1]*1.3*(random.random())) # average z with some noise
 
         # normalize them again
         k = math.sqrt(x_norm**2 + y_norm**2 + z_norm**2)
@@ -188,6 +206,9 @@ class fish():
     '''
     # some functions to get variables
     '''
+    def set_shark(self, s):
+        self.shark = s
+        return
     def get_pos(self):
         return self.pos
     def get_ang(self):
@@ -197,6 +218,7 @@ class fish():
         vy = self.ang[1]
         vz = self.ang[2]
         return vx, vy, vz
+
 '''
 # This is going to be the driver class. I'm naming it will basically drive the program
 '''
@@ -209,14 +231,18 @@ class driver():
     positions = [] # each index cointains a 2d array of [[x values], [y values], [z values]]
     angles = [] # angles of each fish over time
     timesteps = 10000 # number of timesteps
+    pred = None
+    p_xyz = [] # stores shark xyz
+    p_lxyz = [] # stores shark lxyz per frame
 
     '''
     # The init function. This will create N fish and store them in school
     '''
-    def __init__(self, school):
+    def __init__(self, school, pred=None):
 
         # stoure user inputed number of fish. default 500
         self.school = school
+        self.pred = pred # set shark
         #self.positions.append([fish.get_pos() for fish in self.school]) # store positions
         #self.angles.append([fish.get_ang() for fish in self.school]) # store the angles
         self.N = len(school)
@@ -226,14 +252,36 @@ class driver():
     '''
     # Drives the simulation of the motion of the fish and stores the data
     '''
-    def simulate(self, timesteps=10000):
+    def simulate(self, timesteps=10000, verbose=False):
 
         self.timesteps = timesteps
-
+        # fish positions 2d
+        xs = []
+        ys = []
+        zs = []
+        # pred pos 1d
+        px = []
+        py = []
+        pz = []
+        plx = []
+        ply = []
+        plz = []
         # at each time step itearte over each fish and make them move
         for dt in range(timesteps): # iterate over each timestep
+            if(dt%20==0 and verbose):print('simulating frame {0} of {1}'.format(dt, timesteps))
             for fish in self.school: # iterate over each fish now
                 fish.move(self.school, ve=False) # move the fishy
+            # handle shark
+            if(self.pred != None):
+                self.pred.move() # move
+                p_pos = self.pred.get_pos() # get pos
+                p_lxyz = self.pred.get_lxyz() # get local xyz
+                px.append(p_pos[0]) # store them all
+                py.append(p_pos[1])
+                pz.append(p_pos[2])
+                plx.append(p_lxyz[0])
+                plx.append(p_lxyz[1])
+                plx.append(p_lxyz[2])
 
             xs = [fish.get_pos()[0] for fish in self.school] # get the x values of each fish
             ys = [fish.get_pos()[1] for fish in self.school] # get the y values of each fish
@@ -245,13 +293,16 @@ class driver():
 
             self.positions.append([xs, ys, zs, local_xs, local_ys, local_zs]) # store positions
             #self.angles.append([local_xs, local_ys, local_zs]) # store the angles
+        if(self.pred != None):
+            self.p_xyz = [px, py, pz]
+            self.p_lxyz = [plx, ply, plz]
 
         return
 
     '''
     # Plots the simulation data
     '''
-    def plot(self, filename):
+    def plot(self, filename, weights, radii):
 
         # here I initialize the figure and axes
         fig = plt.figure()
@@ -271,15 +322,23 @@ class driver():
             v = [ b*f for b in v]
             w = [ c*f for c in w]
             return x,y,z,u,v,w
+        # get shark quiver
+        def get_s_quiv(i):
+            x = self.p_xyz[0]
+            y = self.p_xyz[1]
+            z = self.p_xyz[2]
+            return x,y,z
 
         # this does the animating of the quiver
         def update_quiver(i):
             self.quiv.remove() # clera old plot
             q = get_quiv(i, 5)
 
-            self.quiv = ax.quiver(*q) # replot
-            self.quiv.set_linewidth(2)
-            self.plt_title.set_text("School at timestep {0}".format(i))
+            self.quiv = ax.quiver(*q, normalize=True, length=5) # replot
+            if(self.pred != None):
+                s = get_s_quiv(i)
+                self.s_quiv = ax.scatter(*s, s=30, c='r')
+            self.plt_title.set_text("School at timestep {0}, N={1}, weights={2}, radii={3}".format(i, self.N, weights, radii))
             self.ax.set_xlim(auto=True)
             self.ax.set_ylim(auto=True)
             self.ax.set_zlim(auto=True)
@@ -294,8 +353,15 @@ class driver():
         data = get_quiv(0, 5)
         quiv = ax.quiver(*data)
 
+        # shark
+        if(self.pred != None):
+            print("Plotting shark")
+            s_data = get_s_quiv(0)
+            s_quiv = ax.scatter(*s_data)
+            self.s_quiv = s_quiv
+
         # this creates the initial progress line
-        title = plt.title("School at timestep {0}".format(0))
+        title = plt.title("School at timestep {0}, N={1}, weights={2}, radii={3}".format(0, self.N, weights, radii))
 
         # this creates the instance variables
         self.quiv = quiv # sets an instance variable that update_quiver can access
@@ -303,7 +369,7 @@ class driver():
         self.ax = ax # set ax to be animated
 
         # Animation to do
-        ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 10, blit=False, repeat=True)
+        ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 50, blit=False, repeat=True)
         dir = os.getcwd()
         ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\outputs\\'+filename, writer='imagemagick')
 
@@ -322,32 +388,132 @@ class driver():
         return self.positions
     def get_angles(self):
         return self.angles
+'''
+# shark
+'''
+class shark():
+    xyz = [] # global x, y, z
+    lxyz = [] # local x, y, z (angles)
+    dt = 0.25
+    velocity = 0
+    vnoise = 0.3
+    school = []
+    max_in_x = 30
+    radius = 100
+    # initialize the thing
+    def __init__(self, v=4):
+        self.velocity = v
+        for i in range(3):
+            self.xyz.append(random.random()*self.max_in_x)
+        for i in range(3):
+            self.lxyz.append(random.random())
+        return
+    # set school var
+    def set_school(self, s):
+        self.school = s
+        return
+    # move shark
+    def move(self):
+        lx, ly, lz = self.calc_lxyz()
+        self.update_lxyz(lx, ly, lz)
+        x, y, z, = self.calc_pos(lx, ly, lz)
+        self.update_pos(x, y, z)
+        return
+    # calc angle of motion
+    def calc_lxyz(self):
+        count = 1 # for weighted avg
+        xs = [] # x angles
+        ys = [] # y angles
+        zs = [] # z angles
+
+        # iter over school
+        for fish in self.school:
+            dir = [0,0,0]
+            other_pos = fish.get_pos() # gonna be using this so may as well store it
+            d = round(math.sqrt(sum([(a - b) ** 2 for a, b in zip(other_pos, self.xyz)])), 3)
+            if(d < self.radius): # in radius of attraction
+                dir = map(operator.sub, other_pos, self.xyz) # weight inverse to distance
+                dir = [ d * (1/d) for d in dir]
+                count += float((1/d))
+            xs.append(dir[0]) # append weighted x
+            ys.append(dir[1]) # append weighted y
+            zs.append(dir[2]) # append weighted z
+        # now normalize
+        x = sum(xs)/count
+        y = sum(ys)/count
+        z = sum(zs)/count
+        return x, y, z
+
+    # updates angle
+    def update_lxyz(self, x, y, z):
+        self.lxyz = [x, y, z]
+        return
+
+    # calcs position
+    def calc_pos(self, vx, vy, vz):
+        # calculate position
+        dx = (self.dt * vx * self.velocity ) * ( 1 + random.random()*self.vnoise) # dx
+        dy = (self.dt * vy * self.velocity ) * ( 1 + random.random()*self.vnoise) # dy
+        dz = (self.dt * vz * self.velocity ) * ( 1 + random.random()*self.vnoise) # dz
+        x = self.xyz[0] + dx # x
+        y = self.xyz[1] + dy # y
+        z = self.xyz[2] + dz # z
+
+        #print(vx, vy, vz, dx, dy, dz)
+
+        # now update the positions
+        x = round(x, 4)
+        y = round(y, 4)
+        z = round(z, 4)
+        return x, y, z
+
+    # updates pos
+    def update_pos(self, x, y, z):
+        self.xyz = [x, y, z]
+        return
+
+    # returns pos
+    def get_pos(self):
+        return self.xyz
+    # get angle
+    def get_lxyz(self):
+        return self.lxyz
 
 '''
 # main method
 '''
 def main():
-    radii = [35,40,160] # repulsion, orientation, attraction
-    velocity = 12 # fish velocity
-    noise = [0.1, 0.05] # velocity and angle noise
-    weights = [2.0, 0.7, 3.5, 0.5] # attraction, repulsion, orientation, self
-    N = 300 # number of fish
-    frames = 1500 # frames to animate
+    radii = [5,40,160, 30] # repulsion, orientation, attraction
+    velocity = 2 # fish velocity
+    noise = [0.64, 0.05] # velocity and angle noise
+    weights = [2.0, 0.7, 0.5, 0.5, 0.3] # attraction, repulsion, orientation, self
+    N = 20 # number of fish
+    sh = True
+    frames = 300 # frames to animate
     outfile = 'output.gif'
 
     # make the school
     print("Making {0} fish...".format(N))
     school = []
     for i in range(N):
-        school.append(fish(r=radii, v = velocity))
+        school.append(fish(r=radii, v=velocity))
+
+    pred = None
+    if(sh):
+        # make predator
+        print("Making predator...")
+        pred = shark(4) # create with v = 4
+        pred.set_school(school) # assign school
+        for f in school: # assign pred to each fish
+            f.set_shark(pred) # set shark in each school
 
     print("Simulating...")
-    drive = driver(school)
+    drive = driver(school, pred=pred)
     #drive.plot()
-    drive.simulate(frames)
+    drive.simulate(frames, verbose=True)
 
     print("Plotting...")
-    drive.plot(outfile)
+    drive.plot(outfile, weights, radii)
 
     return
 # call main method
