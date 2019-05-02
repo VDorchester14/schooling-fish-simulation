@@ -149,7 +149,7 @@ class fish():
                 count += self.weights[3]
             elif(d < self.radii[0]): # if it's in the radius of repulsion
                 v = list(map(operator.sub, self.pos, other_pos)) # from other to self
-                vs = sum([i**2 for i in v])**0.5 # getting square of quad
+                vs = np.linalg.norm([i**2 for i in v])**0.5 # getting square of quad
                 v_norm = [i/vs for i in v] # normalizing
                 v_norm = [m * self.weights[1] for m in v_norm] # repulsion weight
                 count += self.weights[1]
@@ -163,7 +163,7 @@ class fish():
             elif(d < self.radii[2]): # if it's in radius of attraction
                 # vector pointing from self to other
                 v = list(map(operator.sub, other_pos, self.pos)) # frin sekf to other
-                vs = sum([i**2 for i in v])**0.5 # square of quadrature
+                vs = np.linalg.norm([i**2 for i in v])**0.5 # square of quadrature
                 v_norm = [i/vs for i in v] # normalized
                 v_norm = [m * self.weights[0] for m in v_norm] # attraction weight
                 count += self.weights[0]
@@ -343,9 +343,9 @@ class driver():
                 self.s_quiv.remove()
                 self.s_quiv = ax.scatter(*s, s=20, c='r')
             self.plt_title.set_text("School at timestep {0}, N={1}\nweights={2}, radii={3}".format(i, self.N, weights, radii))
-            self.ax.set_xlim(auto=True)
+            '''self.ax.set_xlim(auto=True)
             self.ax.set_ylim(auto=True)
-            self.ax.set_zlim(auto=True)
+            self.ax.set_zlim(auto=True)'''
             return
 
         # this sets the limits of our quiver plot
@@ -372,11 +372,11 @@ class driver():
         self.ax = ax # set ax to be animated
 
         # Animation to do
-        print("animating")
+        print("Animating...")
         ani = FuncAnimation(fig, update_quiver, frames = self.timesteps, interval = 50, blit=False, repeat=True)
         dir = os.getcwd()
-        print(dir)
-        ani.save(dir+'\\outputs\\'+filename, writer='imagemagick')
+        #print(dir)
+        ani.save(dir+'\\AlgorithmsInMolecularBio\\finalProject\\outputs\\'+filename, writer='imagemagick')
 
         # more formatting
         plt.xlabel("x")
@@ -430,12 +430,18 @@ class shark():
         xs = [] # x angles
         ys = [] # y angles
         zs = [] # z angles
-
+        ds = []
+        dmax = 0
+        closest_index = 0
         # iter over school
-        for fish in self.school:
+        for ix, fish in enumerate(self.school):
             dir = [0,0,0]
             other_pos = fish.get_pos() # gonna be using this so may as well store it
             d = abs(round(math.sqrt(sum([(a - b) ** 2 for a, b in zip(other_pos, self.xyz)])), 3))
+            ds.append(ds)
+            if(d > dmax):
+                dmax = d
+                closest_index = ix
             if(d < self.radius): # in radius of attraction
                 dir = map(operator.sub, other_pos, self.xyz) # weight inverse to distance
                 #dir = [ d * (1/d) for d in dir]
@@ -446,13 +452,19 @@ class shark():
             xs.append(dir[0]) # append weighted x
             ys.append(dir[1]) # append weighted y
             zs.append(dir[2]) # append weighted z
+        # weight closest fish more
+        xs[closest_index] = xs[closest_index]*30
+        ys[closest_index] = ys[closest_index]*30
+        zs[closest_index] = zs[closest_index]*30
+
+        count += 30
         # now normalize
         x = sum(xs)/count
         y = sum(ys)/count
         z = sum(zs)/count
 
         # normalize them again
-        k = math.sqrt(x**2 + y**2 + z**2)
+        k = np.linalg.norm([x, y, z])
         #print(k)
         x = x/k
         y = y/k
@@ -499,13 +511,13 @@ class shark():
 # main method
 '''
 def main():
-    radii = [32,40,160, 100] # repulsion, orientation, attraction, fleeing
+    radii = [16, 40, 160, 100] # repulsion, orientation, attraction, fleeing
     velocity = 6 # fish velocity
     noise = [0.1, 0.25] # velocity and angle noise
-    weights = [4, 1.2, 1.0, 0.2, 30] # attraction, repulsion, orientation, self, flee
-    N = 50 # nmber of fish
-    sh = True
-    frames = 400 # frames to animate
+    weights = [3, 4, 1.0, 0.2, 30] # attraction, repulsion, orientation, self, flee
+    N = 30 # nmber of fish
+    sh = False
+    frames = 200 # frames to animate
     outfile = 'output.gif'
 
     # make the school
