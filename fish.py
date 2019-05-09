@@ -17,6 +17,7 @@ from sklearn.preprocessing import normalize
 from matplotlib import animation, rc
 from IPython.display import HTML, Image
 import os
+import timeit
 
 '''
 # This here is my fishy
@@ -139,6 +140,8 @@ class fish():
 
             # get distance to this fish
             d = round(math.sqrt(sum([(a - b) ** 2 for a, b in zip(other_pos, self.pos)])), 3)
+            #d = round(sum([(a - b) ** 2 for a, b in zip(other_pos, self.pos)]), 3)
+
             if(ve):print('Self: {0}'.format(self.pos))
             if(ve):print('Other: {0}'.format(other_pos))
 
@@ -147,20 +150,20 @@ class fish():
                 v_norm = self.get_local_xyz() # get own angle
                 v_norm = [m * self.weights[3] for m in v_norm] # self weight
                 count += self.weights[3]
-            elif(d < self.radii[0]): # if it's in the radius of repulsion
+            elif(d < (self.radii[0])): # if it's in the radius of repulsion
                 v = list(map(operator.sub, self.pos, other_pos)) # from other to self
                 vs = np.linalg.norm([i**2 for i in v])**0.5 # getting square of quad
                 v_norm = [i/vs for i in v] # normalizing
                 v_norm = [m * self.weights[1] for m in v_norm] # repulsion weight
                 count += self.weights[1]
-            elif(d < self.radii[1]): # if it's in the radius of orientation
+            elif(d < (self.radii[1])): # if it's in the radius of orientation
                 # vector pointing from self to other
                 own = [ x * 1.2 for x in self.ang]
                 v = list(map(operator.add, other_ang, own)) # add both vectors
                 v_norm = [i/2 for i in v] # average them
                 v_norm = [m * self.weights[2] for m in v_norm] # orientation weight
                 count += self.weights[2]
-            elif(d < self.radii[2]): # if it's in radius of attraction
+            elif(d < (self.radii[2] )): # if it's in radius of attraction
                 # vector pointing from self to other
                 v = list(map(operator.sub, other_pos, self.pos)) # frin sekf to other
                 vs = np.linalg.norm([i**2 for i in v])**0.5 # square of quadrature
@@ -515,7 +518,7 @@ def main():
     velocity = 6 # fish velocity
     noise = [0.1, 0.25] # velocity and angle noise
     weights = [3, 4, 1.0, 0.2, 30] # attraction, repulsion, orientation, self, flee
-    N = 30 # nmber of fish
+    N = 100 # nmber of fish
     sh = False
     frames = 200 # frames to animate
     outfile = 'output.gif'
@@ -541,7 +544,7 @@ def main():
     drive.simulate(frames, verbose=True)
 
     print("Plotting...")
-    drive.plot(outfile, weights, radii)
+    #drive.plot(outfile, weights, radii)
 
     return
 # call main method
