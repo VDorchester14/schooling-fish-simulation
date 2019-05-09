@@ -13,7 +13,6 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import pandas as pd
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
-from sklearn.preprocessing import normalize
 from matplotlib import animation, rc
 from IPython.display import HTML, Image
 import os
@@ -272,7 +271,7 @@ class driver():
         plz = []
         # at each time step itearte over each fish and make them move
         for dt in range(timesteps): # iterate over each timestep
-            if(dt%20==0 and verbose):print('simulating frame {0} of {1}'.format(dt, timesteps))
+            #if(dt%20==0 and verbose):print('simulating frame {0} of {1}'.format(dt, timesteps))
             for fish in self.school: # iterate over each fish now
                 fish.move(self.school, ve=False) # move the fishy
             # handle shark
@@ -513,18 +512,18 @@ class shark():
 '''
 # main method
 '''
-def main():
+def main(n, steps):
     radii = [16, 40, 160, 100] # repulsion, orientation, attraction, fleeing
     velocity = 6 # fish velocity
     noise = [0.1, 0.25] # velocity and angle noise
     weights = [3, 4, 1.0, 0.2, 30] # attraction, repulsion, orientation, self, flee
-    N = 100 # nmber of fish
+    N = n # nmber of fish
     sh = False
-    frames = 200 # frames to animate
+    frames = steps # frames to animate
     outfile = 'output.gif'
 
     # make the school
-    print("Making {0} fish...".format(N))
+    #print("Making {0} fish...".format(N))
     school = []
     for i in range(N):
         school.append(fish(r=radii, v=velocity, weights=weights))
@@ -543,9 +542,9 @@ def main():
     #drive.plot()
     drive.simulate(frames, verbose=True)
 
-    print("Plotting...")
+    #print("Plotting...")
     #drive.plot(outfile, weights, radii)
 
     return
 # call main method
-if __name__ == '__main__':main()
+if __name__ == '__main__':main(50, 300)
