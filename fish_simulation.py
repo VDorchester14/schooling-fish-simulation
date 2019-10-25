@@ -47,7 +47,7 @@ def move_1():
 
         del v1, v2, v3, v4
 
-#
+# This was my final and best implementation.
 def move_2():
     global p, v
     beta = np.stack([p]*NUM, axis=0) # 3D array containing all positions stacked vertically
